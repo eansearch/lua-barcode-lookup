@@ -33,6 +33,4 @@ build = {
   modules = {
     main = "src/barcode-lookup.lua"
   },
-  copy_directories = { "doc" }
 }
-test_dependencies = { "luaunit >= 3.4" }
