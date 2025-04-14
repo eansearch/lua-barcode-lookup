@@ -26,14 +26,12 @@ description = {
 }
 dependencies = {
   "lua >= 5.1",
-  "socket.http >= 1",
-  "ltn12 >= 1",
-  "cjson >= 1"
+  "lua-cjson >= 1"
 }
 build = {
   type = "builtin",
   modules = {
-    main = "src/BarcodeLookup.lua"
+    main = "src/barcode-lookup.lua"
   },
   copy_directories = { "doc" }
 }
