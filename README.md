@@ -1,6 +1,11 @@
-# lua-barcode-lookup
+# BarcodeLookup
 
 A Lua package or EAN, UPC, GTIN and ISBN name lookup and validation
+
+To use the EAN-Search.org API, you need an API access token from
+https://www.ean-search.org/ean-database-api.html
+
+For the example we store the API token in the environment variable EAN_SEARCH_API_TOKEN.
 
 ```lua
 local barcodeLookup = BarcodeLookup:new(os.getenv("EAN_SEARCH_API_TOKEN"))
