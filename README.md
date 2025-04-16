@@ -35,3 +35,5 @@ print (barcodeLookup:verifyChecksum("5099750442228"))
 
 print (barcodeLookup:issuingCountryLookup("5099750442227"))
 
+print ("<img src='data:image/png;base64," .. barcodeLookup:barcodeImage("5099750442227", 300, 200)) .. "' width='300' height='200'>")
+

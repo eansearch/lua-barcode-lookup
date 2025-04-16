@@ -20,6 +20,7 @@ function BarcodeLookup:setTimeout(sec)
     self.timeout = sec
 end
 
+-- get access token from https://www.ean-search.org/ean-database-api.html
 function BarcodeLookup:gtinLookup(ean, lang)
     lang = lang or 1
     local response = self:apiCall("op=barcode-lookup&ean=" .. ean .. "&language=" .. lang)
@@ -75,13 +76,14 @@ function BarcodeLookup:categorySearch(category, name, page)
     return response.productlist or {}
 end
 
--- function BarcodeLookup:barcodeImage(ean, width, height)
---    width = width or 102
---    height = height or 50
---    local response = self:apiCall("op=barcode-image&ean=" .. ean .. "&width=" .. width .. "&height=" .. height)
---    local response = xml.load(response)
---    return response:find("product/barcode"):getText()
--- end
+-- returns PNG barcode image base64 encoded
+function BarcodeLookup:barcodeImage(ean, width, height)
+    width = width or 102
+    height = height or 50
+    local response = self:apiCall("op=barcode-image&ean=" .. ean .. "&width=" .. width .. "&height=" .. height)
+    local response = xml.load(response)
+    return response:find("product/barcode"):getText()
+end
 
 function BarcodeLookup:verifyChecksum(ean)
     local response = self:apiCall("op=verify-checksum&ean=" .. ean)
