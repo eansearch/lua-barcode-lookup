@@ -1,5 +1,9 @@
---- BarcodeLookup module for EAN, UPC, and ISBN lookup and validation.
+--- BarcodeLookup module for EAN, UPC, and ISBN lookup and validation
+--- Copyright Relaxed Communications GmbH, 2025
+---           info@relaxedcommunications.com
+---           https://www.ean-search.org
 -- Provides functionality for accessing the EAN-Search.org API to perform various barcode-related operations.
+
 local http = require("socket.http")
 local ltn12 = require("ltn12")
 local cjson = require("cjson")
