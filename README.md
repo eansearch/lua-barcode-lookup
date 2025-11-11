@@ -14,7 +14,7 @@ local product = barcodeLookup:barcodeLookup("5099750442227")
 if (product.error) then
     print(product.error)
 else
-    print(product.name, product.categoryName)
+    print(product.name, product.categoryName, product.googleCategoryId)
 end
 local product = barcodeLookup:barcodeLookup("5099750442228")
 if (product.error) then
