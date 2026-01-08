@@ -155,10 +155,12 @@ end
 function BarcodeLookup:apiCall(params, tries)
     tries = tries or 1
     local url = BarcodeLookup.BASE_URL .. "&token=" .. self.accessToken .. "&" .. params
+    local ua_header = { ["User-Agent"] = "lua-eansearch/1.0" }
     local response_body = {}
     local res, code, headers = http.request{
         url = url,
         method = "GET",
+        headers = ua_header,
         sink = ltn12.sink.table(response_body),
         timeout = self.timeout
     }
