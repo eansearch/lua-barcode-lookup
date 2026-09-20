@@ -1,10 +1,10 @@
--- lua-barcode-lookup-1.0.2-1.rockspec
+-- lua-barcode-lookup-1.1.0-1.rockspec
 rockspec_format = "3.0"
 package = "lua-barcode-lookup"
-version = "1.0.2-1"
+version = "1.1.0-1"
 source = {
   url = "git+https://github.com/eansearch/lua-barcode-lookup",
-  tag = "v1.0.2"
+  tag = "v1.1.0"
 }
 description = {
   summary = "Barcode lookup by EAN, UPC, ISBN or product name",
