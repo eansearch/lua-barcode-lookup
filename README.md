@@ -10,13 +10,13 @@ For the example we store the API token in the environment variable EAN_SEARCH_AP
 ```lua
 local barcodeLookup = BarcodeLookup:new(os.getenv("EAN_SEARCH_API_TOKEN"))
 
-local product = barcodeLookup:barcodeLookup("5099750442227")
+local product = barcodeLookup:gtinLookup("5099750442227")
 if (product.error) then
     print(product.error)
 else
     print(product.name, product.categoryName, product.googleCategoryId)
 end
-local product = barcodeLookup:barcodeLookup("5099750442228")
+local product = barcodeLookup:gtinLookup("5099750442228")
 if (product.error) then
     print(product.error)
 else
@@ -35,5 +35,13 @@ print (barcodeLookup:verifyChecksum("5099750442228"))
 
 print (barcodeLookup:issuingCountryLookup("5099750442227"))
 
-print ("<img src='data:image/png;base64," .. barcodeLookup:barcodeImage("5099750442227", 300, 200)) .. "' width='300' height='200'>")
+local asin = barcodeLookup:findAsinForEan("9781119578888")
+print (asin)
+print (barcodeLookup:findEanForAsin(asin))
+
+local lccn = barcodeLookup:findLccnForEan("9781119578888")
+print (lccn)
+print (barcodeLookup:findEanForLccn(lccn))  -- the first one, if there are several
+
+print ("<img src='data:image/png;base64," .. barcodeLookup:barcodeImage("5099750442227", 300, 200) .. "' width='300' height='200'>")
 

@@ -1,5 +1,5 @@
 --- BarcodeLookup module for EAN, UPC, and ISBN lookup and validation
---- Copyright Relaxed Communications GmbH, 2025
+--- Copyright Relaxed Communications GmbH, 2025-2026
 ---           info@relaxedcommunications.com
 ---           https://www.ean-search.org
 -- Provides functionality for accessing the EAN-Search.org API to perform various barcode-related operations.
@@ -7,6 +7,19 @@
 local http = require("socket.http")
 local ltn12 = require("ltn12")
 local cjson = require("cjson")
+local socket = require("socket")
+
+--- helper function to encode a string for use in a URL
+-- @param str string to encode
+-- @return URL-encoded string
+local function urlencode(str)
+    local hex = string.gsub(str, 
+        "([^%w%s])", 
+        function(c)
+            return string.format("%%%02X", string.byte(c))
+        end)
+    return string.gsub(hex, " ", "+")
+end
 
 local BarcodeLookup = {}
 BarcodeLookup.__index = BarcodeLookup
@@ -49,6 +62,7 @@ end
 -- @param lang preferred language code (default is 1 = English)
 -- @return product information or nil if not found
 function BarcodeLookup:upcLookup(upc, lang)
+    lang = lang or 1
     local response = self:apiCall("op=barcode-lookup&upc=" .. upc .. "&language=" .. lang)
     return response[1] or nil
 end
@@ -117,13 +131,16 @@ end
 -- @param ean EAN/GTIN to generate the barcode for
 -- @param width width of the barcode image (default is 102)
 -- @param height height of the barcode image (default is 50)
--- @return base64-encoded barcode image
+-- @return base64-encoded barcode image or nil on error
 function BarcodeLookup:barcodeImage(ean, width, height)
     width = width or 102
     height = height or 50
     local response = self:apiCall("op=barcode-image&ean=" .. ean .. "&width=" .. width .. "&height=" .. height)
-    local response = xml.load(response)
-    return response:find("product/barcode"):getText()
+    if response[1] then
+        return response[1].barcode
+    else
+        return nil
+    end
 end
 
 --- Verify the checksum of a barcode
@@ -131,15 +148,70 @@ end
 -- @return True if the checksum is valid, false otherwise
 function BarcodeLookup:verifyChecksum(ean)
     local response = self:apiCall("op=verify-checksum&ean=" .. ean)
-    return response[1].valid == "1"
+    return response[1] ~= nil and response[1].valid == "1"
 end
 
 --- Retrieve the issuing country of any barcode
 -- @param ean EAN/GTIN to look up
--- @return issuing country of the barcode
+-- @return issuing country of the barcode or nil if not found
 function BarcodeLookup:issuingCountryLookup(ean)
     local response = self:apiCall("op=issuing-country&ean=" .. ean)
-    return response[1].issuingCountry
+    if response[1] then
+        return response[1].issuingCountry
+    else
+        return nil
+    end
+end
+
+--- Find the Amazon ASIN for a barcode
+-- @param ean EAN/GTIN/ISBN-13 to look up
+-- @return ASIN or nil if not found
+function BarcodeLookup:findAsinForEan(ean)
+    local response = self:apiCall("op=asin-for-ean-lookup&ean=" .. ean)
+    if response[1] then
+        return response[1].asin
+    else
+        return nil
+    end
+end
+
+--- Find the barcode (EAN) for an Amazon ASIN
+-- @param asin Amazon ASIN to look up
+-- @return EAN or nil if not found
+function BarcodeLookup:findEanForAsin(asin)
+    asin = urlencode(asin)
+    local response = self:apiCall("op=ean-for-asin-lookup&asin=" .. asin)
+    if response[1] then
+        return response[1].ean
+    else
+        return nil
+    end
+end
+
+--- Find the Library of Congress Control Number (LCCN) for a barcode
+-- @param ean EAN/GTIN/ISBN-13 to look up
+-- @return LCCN or nil if not found
+function BarcodeLookup:findLccnForEan(ean)
+    local response = self:apiCall("op=lccn-for-ean-lookup&ean=" .. ean)
+    if response[1] then
+        return response[1].lccn
+    else
+        return nil
+    end
+end
+
+--- Find the barcode (EAN) for a Library of Congress Control Number (LCCN)
+-- There can be multiple barcodes for one LCCN, this returns the first one found.
+-- @param lccn Library of Congress Control Number to look up
+-- @return EAN or nil if not found
+function BarcodeLookup:findEanForLccn(lccn)
+    lccn = urlencode(lccn)
+    local response = self:apiCall("op=ean-for-lccn-lookup&lccn=" .. lccn)
+    if response[1] then
+        return response[1].ean
+    else
+        return nil
+    end
 end
 
 --- Retrieve the remaining API credits
@@ -165,32 +237,28 @@ function BarcodeLookup:apiCall(params, tries)
         timeout = self.timeout
     }
 
-    if code == 429 and tries < BarcodeLookup.MAX_API_TRIES then
-        os.execute("sleep 1")
-        return self:apiCall(params, tries + 1)
+    if not res then
+        error("HTTP request failed: " .. tostring(code))
+    end
+    if code == 429 then
+        if tries < BarcodeLookup.MAX_API_TRIES then
+            socket.sleep(1)
+            return self:apiCall(params, tries + 1)
+        end
+        error("Too many requests (HTTP 429), giving up after " .. tries .. " tries")
     end
     if code == 400 then
         return {}
     end
 
-    if headers and headers["X-Credits-Remaining"] then
-        self.remaining = tonumber(headers["X-Credits-Remaining"])
+    -- LuaSocket returns all header names in lower case
+    local credits = headers and (headers["x-credits-remaining"] or headers["X-Credits-Remaining"])
+    if credits and tonumber(credits) then
+        self.remaining = tonumber(credits)
     end
 
     local json = table.concat(response_body)
     return cjson.decode(json)
-end
-
---- helper function to encode a string for use in a URL
--- @param str string to encode
--- @return URL-encoded string
-function urlencode(str)
-    local hex = string.gsub(str, 
-        "([^%w%s])", 
-        function(c)
-            return string.format("%%%02X", string.byte(c))
-        end)
-    return string.gsub(hex, " ", "+")
 end
 
 return BarcodeLookup
